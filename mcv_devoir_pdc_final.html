@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Évaluation GC1 — Bac Pro MCV</title>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,400;0,600;0,700&family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f5f2ec;--bg2:#ece8df;--surf:#fff;--bord:#d3cec3;
+  --bx:#761929;--bxl:rgba(118,25,41,.08);--bxm:rgba(118,25,41,.22);
+  --ink:#1c1810;--dim:#7a7168;
+  --ok:#246038;--okl:rgba(36,96,56,.08);
+  --ko:#a92020;--kol:rgba(169,32,32,.08);
+  --warn:#975200;--warnl:rgba(151,82,0,.09);
+  --blue:#1a5c8a;--bluel:rgba(26,92,138,.09);
+  --purple:#5c2d8a;--purplel:rgba(92,45,138,.09);
+  --sh:0 2px 12px rgba(28,24,16,.07);--shl:0 6px 26px rgba(28,24,16,.12);--r:8px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--ink);font-family:'DM Sans',sans-serif;min-height:100vh;}
+.hidden{display:none!important;}
+
+/* ── IDENTITY ── */
+#s-id{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:2rem;background:var(--bx);position:relative;overflow:hidden;}
+#s-id::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(-45deg,transparent,transparent 36px,rgba(255,255,255,.022) 36px,rgba(255,255,255,.022) 37px);}
+.id-wrap{background:var(--surf);border-radius:16px;padding:44px 40px;max-width:480px;width:100%;box-shadow:var(--shl);position:relative;}
+.id-badge{display:inline-block;background:var(--bxl);border:1px solid var(--bxm);color:var(--bx);font-size:.65rem;letter-spacing:2.5px;text-transform:uppercase;padding:4px 12px;border-radius:100px;margin-bottom:14px;}
+.id-h1{font-family:'Source Serif 4',serif;font-size:1.8rem;font-weight:700;color:var(--bx);line-height:1.2;margin-bottom:4px;}
+.id-h2{font-size:.82rem;color:var(--dim);margin-bottom:26px;line-height:1.5;}
+.fg{display:flex;flex-direction:column;gap:5px;margin-bottom:13px;}
+.fg label{font-size:.68rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--dim);font-weight:600;}
+.fi{background:var(--bg);border:1.5px solid var(--bord);border-radius:var(--r);padding:11px 13px;font-family:'DM Sans',sans-serif;font-size:.92rem;color:var(--ink);outline:none;width:100%;transition:border-color .2s;}
+.fi:focus{border-color:var(--bx);}
+.fi.err{border-color:var(--ko);}
+.fe{font-size:.73rem;color:var(--ko);display:none;}
+.fe.show{display:block;}
+.id-rules{background:var(--bxl);border-left:3px solid var(--bx);border-radius:0 var(--r) var(--r) 0;padding:13px 15px;margin:18px 0;font-size:.81rem;line-height:1.65;color:var(--dim);}
+.id-rules strong{color:var(--bx);}
+.id-rules ul{margin-left:14px;margin-top:6px;}
+.id-rules li{margin-bottom:3px;}
+.btn-go{width:100%;background:var(--bx);color:#fff;border:none;padding:13px;border-radius:var(--r);font-family:'DM Sans',sans-serif;font-size:.95rem;font-weight:600;cursor:pointer;transition:opacity .15s,transform .15s;}
+.btn-go:hover{opacity:.91;transform:translateY(-1px);}
+
+/* ── CHEAT OVERLAY ── */
+#cheat-ov{position:fixed;inset:0;z-index:9999;background:rgba(100,10,20,.97);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:2rem;}
+.ch-ico{font-size:3.5rem;margin-bottom:16px;}
+.ch-h1{font-family:'Source Serif 4',serif;font-size:1.9rem;color:#fff;margin-bottom:9px;}
+.ch-msg{color:rgba(255,255,255,.82);font-size:.93rem;line-height:1.7;max-width:440px;margin-bottom:20px;}
+.ch-cnt{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);padding:8px 20px;border-radius:100px;color:#fff;font-size:.8rem;font-family:'JetBrains Mono',monospace;margin-bottom:20px;}
+
+/* ── HEADER ── */
+#hdr{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(245,242,236,.97);backdrop-filter:blur(16px);border-bottom:1px solid var(--bord);padding:9px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;}
+.hdr-t{font-family:'Source Serif 4',serif;font-size:.95rem;font-weight:700;color:var(--bx);}
+.hdr-s{font-size:.75rem;color:var(--dim);}
+.hdr-r{display:flex;align-items:center;gap:14px;}
+.pt-wrap{display:flex;flex-direction:column;gap:3px;}
+.pt-l{font-size:.66rem;text-transform:uppercase;letter-spacing:1px;color:var(--dim);}
+.pt-tr{width:120px;height:5px;background:var(--bord);border-radius:3px;overflow:hidden;}
+.pt-fi{height:100%;background:linear-gradient(90deg,var(--bx),#b01a20);border-radius:3px;width:0;transition:width .5s ease;}
+.hqn{font-family:'JetBrains Mono',monospace;font-size:.74rem;color:var(--dim);}
+
+/* ── BODY ── */
+#body{max-width:820px;margin:0 auto;padding:82px 18px 80px;}
+
+/* ── QUESTION ── */
+.qc{background:var(--surf);border:1px solid var(--bord);border-radius:12px;padding:24px 26px;box-shadow:var(--sh);margin-bottom:18px;animation:up .3s ease both;}
+@keyframes up{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.qmeta{display:flex;align-items:center;gap:8px;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--bord);flex-wrap:wrap;}
+.qnum{font-family:'Source Serif 4',serif;font-size:1rem;font-weight:700;color:var(--bx);}
+.qtag{font-size:.62rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--dim);background:var(--bg2);padding:2px 8px;border-radius:4px;font-weight:600;}
+.qtype-badge{font-size:.62rem;font-weight:700;padding:2px 8px;border-radius:4px;letter-spacing:.8px;text-transform:uppercase;}
+.qtype-badge.mcq{background:var(--bluel);color:var(--blue);}
+.qtype-badge.multi{background:var(--purplel);color:var(--purple);}
+.qtype-badge.order{background:rgba(36,96,56,.1);color:var(--ok);}
+
+.qctx{background:var(--bg2);border-left:3px solid #b0a898;border-radius:0 var(--r) var(--r) 0;padding:12px 14px;margin-bottom:16px;font-size:.85rem;line-height:1.72;color:var(--dim);font-style:italic;}
+.qctx strong{color:var(--ink);font-style:normal;}
+.qctx em{color:var(--bx);font-style:normal;font-weight:600;}
+.qtxt{font-family:'Source Serif 4',serif;font-size:.98rem;font-weight:600;line-height:1.6;margin-bottom:18px;color:var(--ink);}
+.qtag2{display:inline-block;background:var(--bxl);border:1px solid var(--bxm);color:var(--bx);font-size:.6rem;padding:1px 6px;border-radius:3px;vertical-align:middle;margin-right:4px;text-transform:uppercase;letter-spacing:1px;font-family:'DM Sans',sans-serif;font-weight:600;}
+
+/* OPTIONS */
+.opts{display:flex;flex-direction:column;gap:7px;}
+.opt{background:var(--bg);border:1.5px solid var(--bord);border-radius:var(--r);padding:11px 14px;cursor:pointer;text-align:left;font-family:'DM Sans',sans-serif;font-size:.87rem;color:var(--ink);transition:border-color .17s,background .17s,transform .12s;display:flex;align-items:flex-start;gap:8px;line-height:1.5;width:100%;}
+.opt:hover:not(:disabled){border-color:var(--bx);background:var(--bxl);transform:translateX(2px);}
+.opt.sel{border-color:var(--bx);background:var(--bxl);}
+.opt.multi-sel{border-color:var(--purple);background:var(--purplel);}
+.opt:disabled{cursor:default;transform:none;}
+.opt.locked-q{opacity:.35;cursor:not-allowed;border-color:var(--ko)!important;background:var(--kol)!important;}
+.ol{min-width:22px;height:22px;border-radius:50%;background:var(--bord);color:var(--dim);font-size:.68rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:'JetBrains Mono',monospace;}
+.opt.sel .ol{background:var(--bx);color:#fff;}
+.opt.multi-sel .ol{background:var(--purple);color:#fff;}
+.multi-hint{font-size:.75rem;color:var(--dim);font-style:italic;margin-bottom:10px;}
+
+/* ORDERING */
+.ord-list{list-style:none;display:flex;flex-direction:column;gap:7px;}
+.ord-item{background:var(--bg);border:1.5px solid var(--bord);border-radius:var(--r);padding:10px 14px;cursor:grab;user-select:none;display:flex;align-items:center;gap:10px;font-size:.86rem;transition:border-color .18s;line-height:1.4;}
+.ord-item:hover{border-color:var(--bx);}
+.ord-item.dragging{opacity:.35;cursor:grabbing;}
+.ord-n{min-width:26px;height:26px;border-radius:50%;background:var(--bord);color:var(--dim);font-size:.7rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:'JetBrains Mono',monospace;}
+.ord-who{font-size:.6rem;text-transform:uppercase;letter-spacing:1px;font-weight:600;flex-shrink:0;min-width:40px;}
+.ord-who.cli{color:var(--blue);}
+.ord-who.vnd{color:var(--bx);}
+.ord-txt{flex:1;}
+
+/* CONFIRM ROW */
+.crow{display:flex;align-items:center;justify-content:space-between;margin-top:14px;flex-wrap:wrap;gap:8px;}
+.chint{font-size:.75rem;color:var(--dim);font-style:italic;}
+.btn-val{background:var(--bx);color:#fff;border:none;padding:10px 24px;border-radius:var(--r);cursor:pointer;font-family:'DM Sans',sans-serif;font-size:.88rem;font-weight:600;transition:opacity .15s,transform .15s;}
+.btn-val:hover:not(:disabled){opacity:.9;transform:translateY(-1px);}
+.btn-val:disabled{opacity:.36;cursor:not-allowed;}
+.lock-ban{display:flex;align-items:center;gap:6px;background:var(--warnl);border:1px solid rgba(151,82,0,.22);border-radius:var(--r);padding:10px 13px;font-size:.81rem;color:var(--warn);margin-top:9px;}
+
+/* FINAL */
+#s-fin{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:2rem;background:var(--bx);}
+.fin{background:var(--surf);border-radius:16px;padding:48px 40px;max-width:480px;width:100%;box-shadow:var(--shl);text-align:center;}
+.fin-ico{font-size:4rem;margin-bottom:16px;display:block;}
+.fin-h1{font-family:'Source Serif 4',serif;font-size:2rem;font-weight:700;color:var(--bx);margin-bottom:8px;}
+.fin-stu{font-size:.9rem;color:var(--dim);margin-bottom:20px;}
+.fin-mention{font-family:'Source Serif 4',serif;font-size:1.4rem;color:var(--bx);margin-bottom:6px;}
+.fin-msg{font-size:.85rem;color:var(--dim);line-height:1.65;margin-bottom:28px;}
+.fin-sending{display:flex;align-items:center;justify-content:center;gap:8px;font-size:.82rem;color:var(--dim);padding:12px;background:var(--bg);border-radius:var(--r);}
+.spinner{width:16px;height:16px;border:2px solid var(--bord);border-top-color:var(--bx);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* TOASTS */
+#toasts{position:fixed;top:68px;right:14px;z-index:500;display:flex;flex-direction:column;gap:5px;}
+.tst{background:var(--surf);border:1px solid var(--bord);border-radius:var(--r);padding:9px 15px;font-size:.8rem;box-shadow:var(--shl);max-width:280px;animation:tin .22s ease both;}
+@keyframes tin{from{opacity:0;transform:translateX(14px)}to{opacity:1;transform:translateX(0)}}
+@keyframes tout{to{opacity:0;transform:translateX(14px)}}
+
+@media(max-width:600px){.id-wrap{padding:28px 20px;}.qc{padding:18px 14px;}.fin{padding:32px 20px;}}
+@media print{#hdr,#cheat-ov,#toasts{display:none!important;}}
+</style>
+</head>
+<body>
+
+<!-- CHEAT OVERLAY -->
+<div id="cheat-ov" class="hidden">
+  <div class="ch-ico">⚠️</div>
+  <div class="ch-h1">Changement de fenêtre détecté</div>
+  <div class="ch-msg" id="ch-msg">Vous avez quitté la fenêtre d'évaluation. Ce comportement est enregistré. La question en cours est annulée.</div>
+  <div class="ch-cnt" id="ch-cnt">Avertissement 1 — question annulée</div>
+</div>
+
+<div id="toasts"></div>
+
+<!-- IDENTITY -->
+<div id="s-id">
+  <div class="id-wrap">
+    <div class="id-badge">Bac Pro MCV — Contrôle GC1</div>
+    <div class="id-h1">Évaluation de contrôle</div>
+    <div class="id-h2">GC1 — Conseiller et vendre · Vente conseil omnicanale</div>
+    <div class="fg"><label>Nom *</label><input class="fi" id="i-nom" placeholder="DUPONT" autocomplete="off"><span class="fe" id="e-nom">Veuillez saisir votre nom.</span></div>
+    <div class="fg"><label>Prénom *</label><input class="fi" id="i-prenom" placeholder="Marie" autocomplete="off"><span class="fe" id="e-prenom">Veuillez saisir votre prénom.</span></div>
+    <div class="fg"><label>Classe</label><input class="fi" id="i-classe" placeholder="Terminale MCV" autocomplete="off"></div>
+    <div class="id-rules">
+      <strong>Consignes :</strong>
+      <ul>
+        <li>Devoir individuel — documents fermés.</li>
+        <li>Tout changement d'onglet ou de fenêtre est <strong>détecté automatiquement</strong> et la question en cours est annulée.</li>
+        <li>L'ordre des questions est différent pour chaque élève.</li>
+        <li>Vos résultats sont transmis automatiquement à l'issue du devoir.</li>
+      </ul>
+    </div>
+    <button class="btn-go" onclick="start()">Commencer l'évaluation →</button>
+  </div>
+</div>
+
+<!-- HEADER -->
+<div id="hdr" class="hidden">
+  <div><div class="hdr-t">Évaluation GC1 — MCV</div><div class="hdr-s" id="hdr-s"></div></div>
+  <div class="hdr-r">
+    <div class="pt-wrap"><div class="pt-l">Progression</div><div class="pt-tr"><div class="pt-fi" id="prog"></div></div></div>
+    <div class="hqn" id="hqn">0/70</div>
+  </div>
+</div>
+
+<!-- BODY -->
+<div id="body" class="hidden"><div id="qzone"></div></div>
+
+<!-- FINAL -->
+<div id="s-fin" class="hidden">
+  <div class="fin">
+    <span class="fin-ico" id="f-ico">📋</span>
+    <div class="fin-h1">Évaluation terminée</div>
+    <div class="fin-stu" id="f-stu"></div>
+    <div class="fin-mention" id="f-mention"></div>
+    <div class="fin-msg">Votre devoir a bien été enregistré.<br>Vous pouvez fermer cette page.</div>
+    <div class="fin-sending" id="fin-sending"><div class="spinner"></div>Transmission des résultats en cours...</div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// BANQUE DE 70 QUESTIONS — GC1 Prise de contact — Fil rouge NOVEO
+// Vendeur = l'élève | Responsable = Marc Tissier
+// Types : mcq (QCM 1 réponse) | multi (plusieurs réponses) | order (drag&drop)
+// ═══════════════════════════════════════════════════════════════
+const QS = [
+
+// ─── SECTION 1 : Omnicanal & information commerciale (Q1-10) ───
+{id:'q01',sec:'Omnicanal',tag:'Définition omnicanal',type:'mcq',pts:2,
+ctx:`Marc Tissier vous accueille lors de votre intégration chez NOVEO : <em>"Nos clients nous contactent par tous les canaux. Votre rôle est d'offrir une expérience cohérente quel que soit le canal utilisé."</em>`,
+q:`<span class="qtag2">Omnicanal</span> Qu'est-ce qui distingue fondamentalement l'omnicanal du multicanal ?`,
+opts:[{t:'Le multicanal utilise plusieurs canaux distincts ; l\'omnicanal les intègre pour offrir une expérience client continue et cohérente.',ok:true},{t:'L\'omnicanal concerne uniquement les ventes en ligne, le multicanal les ventes physiques.',ok:false},{t:'Le multicanal est plus récent et plus performant que l\'omnicanal.',ok:false},{t:'Il n\'y a aucune différence dans le référentiel MCV.',ok:false}],
+cor:'A'},
+
+{id:'q02',sec:'Omnicanal',tag:'Parcours client omnicanal',type:'mcq',pts:2,
+ctx:`Un client consulte le site NOVEO depuis son mobile le lundi, passe en magasin le mercredi pour regarder, envoie un message sur le chat du site le jeudi et finalise sa commande en ligne le vendredi.`,
+q:`<span class="qtag2">Parcours client</span> Ce comportement illustre :`,
+opts:[{t:'Un client indécis qu\'il faut relancer en urgence.',ok:false},{t:'Un parcours client omnicanal non linéaire, représentatif du consommateur connecté moderne.',ok:true},{t:'Un dysfonctionnement du site empêchant l\'achat immédiat.',ok:false},{t:'Un comportement exceptionnel réservé aux jeunes générations.',ok:false}],
+cor:'B'},
+
+{id:'q03',sec:'Omnicanal',tag:'Critères information',type:'mcq',pts:2,
+ctx:`Marc Tissier vous demande de préparer la semaine en vous renseignant sur les nouveaux produits trail. Il précise : <em>"Toute info que tu utilises doit respecter 4 critères précis du référentiel."</em>`,
+q:`<span class="qtag2">Information</span> Quels sont les 4 critères d'une information commerciale exploitable selon le référentiel MCV ?`,
+opts:[{t:'Récente, gratuite, facile à trouver, en français.',ok:false},{t:'Fiable, sécurisée, pertinente, disponible.',ok:true},{t:'Précise, chiffrée, officielle, validée par le responsable.',ok:false},{t:'Complète, compréhensible, partagée, stockée.',ok:false}],
+cor:'B'},
+
+{id:'q04',sec:'Omnicanal',tag:'Sources d\'information',type:'multi',pts:3,
+ctx:`Marc Tissier vous demande d\'identifier les sources d\'information exploitables avant de conseiller un client sur le rayon trail.`,
+q:`<span class="qtag2">Multi-choix</span> Parmi ces sources, lesquelles sont <strong>pertinentes et exploitables</strong> pour un vendeur NOVEO ? <em>(Plusieurs réponses correctes)</em>`,
+opts:[{t:'Les fiches produits fournisseurs disponibles dans le logiciel interne.',ok:true},{t:'Les avis clients publiés sur Google Maps et Trailforks.',ok:true},{t:'Les conversations privées d\'autres clients entendues en magasin.',ok:false},{t:'Le catalogue de la concurrence disponible en rayon.',ok:true},{t:'Les rumeurs entendues en salle de pause entre collègues.',ok:false}],
+cor:'A, B, D'},
+
+{id:'q05',sec:'Omnicanal',tag:'Canal omnicanal en situation',type:'mcq',pts:2,
+ctx:`Un client entre chez NOVEO et dit : <em>"J'ai commandé en ligne hier mais j'ai une question sur ma livraison."</em>`,
+q:`<span class="qtag2">Posture omnicanale</span> Quelle posture adoptez-vous en priorité ?`,
+opts:[{t:'"Désolé, l\'e-commerce ce n\'est pas moi, appelez le service client en ligne."',ok:false},{t:'Vous prenez en charge sa question : vous représentez NOVEO dans sa globalité, canal physique ou non.',ok:true},{t:'Vous lui donnez le numéro du service client et lui demandez de rappeler.',ok:false},{t:'Vous attendez que votre responsable soit disponible pour gérer.',ok:false}],
+cor:'B'},
+
+{id:'q06',sec:'Omnicanal',tag:'Étapes de la vente',type:'order',pts:3,
+ctx:`Marc Tissier teste vos connaissances sur la structure globale d'une vente conseil.`,
+q:`<span class="qtag2">Remise en ordre</span> Remettez dans l'ordre les grandes étapes d'une vente conseil.`,
+items:[{id:1,who:'vnd',txt:'Prise de contact et accueil du client',cp:0},{id:2,who:'vnd',txt:'Découverte des besoins (questionnement + écoute active)',cp:1},{id:3,who:'vnd',txt:'Argumentation et présentation de l\'offre adaptée',cp:2},{id:4,who:'vnd',txt:'Traitement des objections',cp:3},{id:5,who:'vnd',txt:'Conclusion de la vente',cp:4},{id:6,who:'vnd',txt:'Vente additionnelle et prise de congé',cp:5}],
+cor:'Contact → Découverte → Argumentation → Objections → Conclusion → Additionnelle/Congé'},
+
+{id:'q07',sec:'Omnicanal',tag:'Comportements professionnels',type:'multi',pts:3,
+ctx:`Marc Tissier vous remet la charte comportementale NOVEO.`,
+q:`<span class="qtag2">Multi-choix</span> Lesquels de ces comportements sont <strong>attendus</strong> par le référentiel GC1 ? <em>(Plusieurs réponses)</em>`,
+opts:[{t:'Respecter les normes vestimentaires de l\'enseigne.',ok:true},{t:'Faire preuve d\'empathie et d\'écoute active.',ok:true},{t:'Adopter un registre de langage adapté au profil du client.',ok:true},{t:'Proposer systématiquement le produit le plus rentable pour l\'enseigne.',ok:false},{t:'Respecter les principes déontologiques dans le conseil.',ok:true}],
+cor:'A, B, C, E'},
+
+{id:'q08',sec:'Omnicanal',tag:'Caractéristiques produit',type:'mcq',pts:2,
+ctx:`Un client vous pose une question technique sur la différence de membrane entre deux vestes imperméables.`,
+q:`<span class="qtag2">Connaissance produit</span> Maîtriser la technologie des produits vous permet principalement de :`,
+opts:[{t:'Remplir le rayon plus efficacement.',ok:false},{t:'Conseiller le client en proposant la solution réellement adaptée à ses besoins.',ok:true},{t:'Justifier un prix élevé sans autre argument.',ok:false},{t:'Éviter de poser des questions au client.',ok:false}],
+cor:'B'},
+
+{id:'q09',sec:'Omnicanal',tag:'Cross-canal vs omnicanal',type:'mcq',pts:2,
+ctx:`Marc Tissier vous explique les différents niveaux d'intégration des canaux.`,
+q:`<span class="qtag2">Cross-canal</span> Un client réserve en ligne et retire son article en magasin. C'est un exemple de :`,
+opts:[{t:'Multicanal — deux canaux indépendants utilisés en parallèle.',ok:false},{t:'Cross-canal — deux canaux qui interagissent et se complètent.',ok:true},{t:'Omnicanal — expérience totalement unifiée sans rupture.',ok:false},{t:'E-commerce — achat exclusivement en ligne.',ok:false}],
+cor:'B'},
+
+{id:'q10',sec:'Omnicanal',tag:'Résultat attendu GC1',type:'mcq',pts:2,
+ctx:`En fin de journée, Marc Tissier vous demande : "Quel est le résultat attendu d'une bonne prise de contact selon le référentiel ?"`,
+q:`<span class="qtag2">Référentiel</span> Quelle affirmation correspond au résultat attendu officiel du référentiel MCV pour la prise de contact ?`,
+opts:[{t:'Le client achète un produit à chaque visite.',ok:false},{t:'Un contact positif est établi et un climat de confiance est instauré.',ok:true},{t:'Le vendeur a présenté au minimum trois produits différents.',ok:false},{t:'Le client donne ses coordonnées pour être recontacté.',ok:false}],
+cor:'B'},
+
+// ─── SECTION 2 : Prise de contact physique (Q11-22) ───
+{id:'q11',sec:'Contact physique',tag:'Lecture non-verbal',type:'mcq',pts:2,
+ctx:`Il est 10h30. Un homme d'une quarantaine d'années entre dans le rayon trail de NOVEO. Il examine les chaussures en silence, compare deux étiquettes prix et consulte son téléphone.`,
+q:`<span class="qtag2">Non-verbal</span> Quelle lecture professionnelle faites-vous de ce comportement ?`,
+opts:[{t:'Il est en phase de recherche — pas encore prêt à être approché.',ok:true},{t:'Il est décidé et cherche juste à finaliser rapidement.',ok:false},{t:'Il est énervé par les prix et va repartir.',ok:false},{t:'Il attend qu\'on l\'approche immédiatement.',ok:false}],
+cor:'A'},
+
+{id:'q12',sec:'Contact physique',tag:'Signal d\'ouverture',type:'mcq',pts:2,
+ctx:`Quelques minutes plus tard, le même client repose son téléphone et croise brièvement votre regard.`,
+q:`<span class="qtag2">Signal d'ouverture</span> Ce moment signifie :`,
+opts:[{t:'Il va partir — inutile d\'intervenir maintenant.',ok:false},{t:'C\'est le bon moment pour s\'approcher calmement avec une phrase neutre.',ok:true},{t:'Il faut lui proposer un produit directement.',ok:false},{t:'Il faut attendre qu\'il parle en premier.',ok:false}],
+cor:'B'},
+
+{id:'q13',sec:'Contact physique',tag:'Phrase d\'accroche',type:'mcq',pts:2,
+ctx:`Vous vous approchez. Le client vous regarde.`,
+q:`<span class="qtag2">Accroche</span> Quelle phrase d'accroche est la plus professionnelle ?`,
+opts:[{t:'"Bonjour ! Vous cherchez des chaussures de trail ?"',ok:false},{t:'"Bonjour, je suis disponible si vous avez des questions sur nos produits."',ok:true},{t:'"Bonjour ! On a des promotions intéressantes en ce moment !"',ok:false},{t:'"Vous avez un budget en tête ?"',ok:false}],
+cor:'B'},
+
+{id:'q14',sec:'Contact physique',tag:'Client autonome',type:'mcq',pts:2,
+ctx:`Le client répond : "Ouais, je regarde juste pour l'instant." en continuant d'examiner les articles sans vous regarder.`,
+q:`<span class="qtag2">Adaptation</span> Ce signal indique qu'il préfère explorer seul. Quelle est la bonne réaction ?`,
+opts:[{t:'Insister : "Je peux quand même vous montrer nos nouveautés !"',ok:false},{t:'Acquiescer et rester visible et disponible à distance, sans le suivre.',ok:true},{t:'Vous éloigner définitivement et ne plus intervenir.',ok:false},{t:'Lui proposer la carte fidélité pour créer un lien.',ok:false}],
+cor:'B'},
+
+{id:'q15',sec:'Contact physique',tag:'Client pressé',type:'mcq',pts:3,
+ctx:`Une cliente entre d'un pas rapide, regarde sa montre, attrape un sac à dos et lit l'étiquette. Son expression est concentrée. Elle n'a pas croisé votre regard.`,
+q:`<span class="qtag2">Profil pressé</span> Quelle approche est la plus adaptée à ce profil ?`,
+opts:[{t:'Attendre qu\'elle repose le sac et vous regarde.',ok:false},{t:'L\'approcher directement : "Ce sac est parfait pour vos besoins !"',ok:false},{t:'L\'approcher discrètement dès qu\'elle lève les yeux : "Bonjour, si vous souhaitez comparer rapidement je peux vous guider en quelques minutes."',ok:true},{t:'Ne pas l\'approcher — une personne pressée ne veut pas être dérangée.',ok:false}],
+cor:'C'},
+
+{id:'q16',sec:'Contact physique',tag:'Registre de langage',type:'mcq',pts:2,
+ctx:`Deux clients entrent en même temps : un adolescent de 16 ans cherchant des baskets de basket, et un cadre d'une cinquantaine d'années cherchant des chaussures de running.`,
+q:`<span class="qtag2">Registre</span> Comment adaptez-vous votre registre de langage ?`,
+opts:[{t:'Même registre formel pour les deux — l\'égalité est primordiale.',ok:false},{t:'Tutoiement pour les deux pour paraître accessible.',ok:false},{t:'Registre détendu et chaleureux pour le jeune, registre plus soutenu pour le cadre — professionnel dans les deux cas.',ok:true},{t:'Vous appelez votre responsable pour gérer l\'adolescent.',ok:false}],
+cor:'C'},
+
+{id:'q17',sec:'Contact physique',tag:'Tenue professionnelle',type:'mcq',pts:1,
+ctx:`Vous arrivez en tenue personnelle. Marc Tissier vous demande de mettre le t-shirt NOVEO avant d'ouvrir.`,
+q:`<span class="qtag2">Comportement pro</span> Cette demande est justifiée parce que :`,
+opts:[{t:'La tenue de marque est une obligation légale.',ok:false},{t:'Respecter les normes vestimentaires est un comportement professionnel du référentiel MCV.',ok:true},{t:'Les clients achètent plus quand le vendeur porte la tenue.',ok:false},{t:'C\'est une préférence personnelle de Marc Tissier.',ok:false}],
+cor:'B'},
+
+{id:'q18',sec:'Contact physique',tag:'Distraction en entretien',type:'mcq',pts:2,
+ctx:`Vous conseillez M. Varnier sur des chaussures de randonnée. Votre téléphone personnel vibre. Un collègue vous fait signe depuis l'autre côté du rayon.`,
+q:`<span class="qtag2">Écoute active</span> Quelle est la réaction professionnelle correcte ?`,
+opts:[{t:'Jeter un coup d\'œil rapide à votre téléphone "juste pour voir".',ok:false},{t:'Dire à M. Varnier : "Excusez-moi une seconde" et voir votre collègue.',ok:false},{t:'Ignorer les deux distractions et rester entièrement disponible pour M. Varnier.',ok:true},{t:'Répondre rapidement pour montrer votre réactivité.',ok:false}],
+cor:'C'},
+
+{id:'q19',sec:'Contact physique',tag:'Déontologie produit',type:'mcq',pts:2,
+ctx:`Une mère entre avec sa fille adolescente. La fille veut les Nike Air Force 1 "pour faire du sport". Vous savez qu'elles sont conçues pour le lifestyle, pas le sport intensif.`,
+q:`<span class="qtag2">Déontologie</span> Quelle réaction respecte les principes déontologiques du référentiel ?`,
+opts:[{t:'Vendre sans commentaire — c\'est ce que la famille veut.',ok:false},{t:'Refuser catégoriquement et imposer un modèle sportif.',ok:false},{t:'Présenter les Air Force 1, informer honnêtement de leur usage limité pour le sport, et proposer une alternative adaptée, en laissant le choix final.',ok:true},{t:'Dire que les Air Force 1 sont en rupture de stock.',ok:false}],
+cor:'C'},
+
+{id:'q20',sec:'Contact physique',tag:'Étapes prise de contact',type:'order',pts:3,
+ctx:`Marc Tissier vous demande de reconstruire la séquence d'une prise de contact physique professionnelle.`,
+q:`<span class="qtag2">Remise en ordre</span> Remettez dans l'ordre les étapes d'une prise de contact en magasin.`,
+items:[{id:1,who:'vnd',txt:'Observer le comportement non-verbal du client',cp:0},{id:2,who:'vnd',txt:'Attendre le signal d\'ouverture (regard, geste)',cp:1},{id:3,who:'vnd',txt:'S\'approcher calmement avec contact visuel et sourire',cp:2},{id:4,who:'vnd',txt:'Formuler la phrase d\'accroche neutre et disponible',cp:3},{id:5,who:'vnd',txt:'Instaurer un climat de confiance par son attitude',cp:4}],
+cor:'Observer → Signal → Approcher → Accroche → Confiance'},
+
+{id:'q21',sec:'Contact physique',tag:'Non-verbal bras croisés',type:'mcq',pts:2,
+ctx:`Un client entre avec les bras croisés, le regard fuyant, et répond "Je regarde juste" d'une voix neutre sans vous regarder.`,
+q:`<span class="qtag2">Non-verbal</span> Comment interprétez-vous ces signaux corporels ?`,
+opts:[{t:'Il est en colère contre le magasin.',ok:false},{t:'Il veut son espace et son autonomie — approche distante recommandée.',ok:true},{t:'Il veut une démonstration immédiate.',ok:false},{t:'Il n\'a pas les moyens d\'acheter.',ok:false}],
+cor:'B'},
+
+{id:'q22',sec:'Contact physique',tag:'Multi comportements pro',type:'multi',pts:3,
+ctx:`Fin de matinée. Marc Tissier évalue vos comportements lors des prises de contact.`,
+q:`<span class="qtag2">Multi-choix</span> Parmi ces actions, lesquelles constituent des <strong>comportements professionnels attendus</strong> ? <em>(Plusieurs réponses)</em>`,
+opts:[{t:'Sourire et établir un contact visuel avant d\'approcher.',ok:true},{t:'Regarder son téléphone personnel entre deux clients.',ok:false},{t:'Adapter sa phrase d\'accroche au comportement observé.',ok:true},{t:'Rester visible et disponible sans imposer sa présence.',ok:true},{t:'Parler à un collègue pendant qu\'un client attend.',ok:false}],
+cor:'A, C, D'},
+
+// ─── SECTION 3 : Prise de contact téléphonique — CROC (Q23-33) ───
+{id:'q23',sec:'Contact téléphonique',tag:'CROC — C Contact',type:'mcq',pts:2,
+ctx:`Le téléphone du magasin NOVEO sonne. Marc Tissier vous dit : "C'est ton tour."`,
+q:`<span class="qtag2">CROC — C</span> Quelle formulation correspond à la phase Contact du CROC ?`,
+opts:[{t:'"Allô, c\'est NOVEO, j\'écoute."',ok:false},{t:'"NOVEO bonjour, [votre prénom] à votre service."',ok:true},{t:'"Oui, NOVEO ?"',ok:false},{t:'"Bonjour, en quoi puis-je vous aider ?"',ok:false}],
+cor:'B'},
+
+{id:'q24',sec:'Contact téléphonique',tag:'CROC — R Raison',type:'mcq',pts:3,
+ctx:`La cliente dit : "Je cherche les Salomon XA Pro 3D en 39, mais votre stock en ligne n'est pas à jour."`,
+q:`<span class="qtag2">CROC — R</span> Vous êtes en phase Raison. Quelle est la meilleure prise en charge ?`,
+opts:[{t:'"Je vais vérifier, restez en ligne." (mise en attente sans reformuler)',ok:false},{t:'"Bien sûr. Pour vérifier précisément : les Salomon XA Pro 3D en 39 — c\'est bien ça ? Je vérifie notre stock en temps réel."',ok:true},{t:'"Désolé, je ne gère pas le site, rappelez demain."',ok:false},{t:'"On a plein de Salomon en stock, passez en magasin !"',ok:false}],
+cor:'B'},
+
+{id:'q25',sec:'Contact téléphonique',tag:'CROC — O Objectif',type:'mcq',pts:2,
+ctx:`Vous confirmez : le XA Pro 3D en 39 est disponible en deux couleurs. La cliente cherche quelque chose pour des trails de 15-20 km.`,
+q:`<span class="qtag2">CROC — O</span> Vous êtes en phase Objectif. Quelle action menez-vous ?`,
+opts:[{t:'"Bien, venez quand vous voulez."',ok:false},{t:'"On les a en deux couleurs. Pour vos trails de 15-20 km, c\'est un excellent choix. Vous souhaitez réserver une paire ou préférez-vous passer les essayer ?"',ok:true},{t:'"Ok, je note votre nom et je vous rappelle."',ok:false},{t:'"Passez en magasin, c\'est plus simple."',ok:false}],
+cor:'B'},
+
+{id:'q26',sec:'Contact téléphonique',tag:'CROC — C Congé',type:'mcq',pts:2,
+ctx:`La cliente décide de venir en magasin demain après-midi essayer les chaussures.`,
+q:`<span class="qtag2">CROC — C</span> Comment menez-vous la phase Congé ?`,
+opts:[{t:'"Ok, à demain." (raccrochez)',ok:false},{t:'"Parfait. Je note votre venue demain après-midi pour le XA Pro 3D en 39. Demandez [votre prénom] à votre arrivée — à demain Madame, bonne journée !"',ok:true},{t:'"D\'accord." (sans rien noter ni confirmer)',ok:false},{t:'"Venez tôt, les stocks s\'épuisent vite !"',ok:false}],
+cor:'B'},
+
+{id:'q27',sec:'Contact téléphonique',tag:'CROC ordre complet',type:'order',pts:3,
+ctx:`Marc Tissier vous demande de reconstruire la méthode CROC.`,
+q:`<span class="qtag2">Remise en ordre</span> Remettez les 4 phases du CROC dans l'ordre.`,
+items:[{id:1,who:'vnd',txt:'Contact — Se présenter : enseigne + prénom + formule d\'accueil',cp:0},{id:2,who:'vnd',txt:'Raison — Écouter et reformuler la demande du client',cp:1},{id:3,who:'vnd',txt:'Objectif — Proposer une solution ou une action concrète',cp:2},{id:4,who:'vnd',txt:'Congé — Reformuler les engagements et prendre congé poliment',cp:3}],
+cor:'Contact → Raison → Objectif → Congé'},
+
+{id:'q28',sec:'Contact téléphonique',tag:'Voix au téléphone',type:'mcq',pts:2,
+ctx:`Après votre appel, Marc Tissier vous conseille : "Au téléphone, tu perds le non-verbal. Il faut compenser."`,
+q:`<span class="qtag2">Communication orale</span> Quel élément compense principalement l'absence de non-verbal au téléphone ?`,
+opts:[{t:'Parler plus vite pour montrer son efficacité.',ok:false},{t:'Sourire — cela s\'entend dans la voix — et soigner le ton, le débit et les formules de politesse.',ok:true},{t:'Utiliser des abréviations pour aller à l\'essentiel.',ok:false},{t:'Poser le moins de questions possible.',ok:false}],
+cor:'B'},
+
+{id:'q29',sec:'Contact téléphonique',tag:'Appel sortant CROC',type:'mcq',pts:3,
+ctx:`M. Garnier a laissé ses coordonnées pour être rappelé sur un sac Osprey en rupture. Il vient d'arriver en stock. Vous l'appelez.`,
+q:`<span class="qtag2">Appel sortant</span> Comment démarrez-vous cet appel sortant ?`,
+opts:[{t:'"Allô M. Garnier ? C\'est NOVEO, le sac est arrivé, vous venez quand ?"',ok:false},{t:'"Bonjour M. Garnier, je suis [prénom] de la boutique NOVEO. Vous nous aviez demandé d\'être contacté pour l\'Osprey — il vient d\'arriver. Avez-vous toujours un projet d\'achat ?"',ok:true},{t:'"Bonjour, je vous appelle pour une offre spéciale."',ok:false},{t:'"Bonjour M. Garnier, euh… c\'est par rapport à votre commande."',ok:false}],
+cor:'B'},
+
+{id:'q30',sec:'Contact téléphonique',tag:'Reformulation appel',type:'mcq',pts:3,
+ctx:`Mme Duval vous appelle pour des chaussures de trail. Elle explique : sorties de 2h en forêt le week-end, débutante, pointure 39, budget 100-130€, douleurs légères aux chevilles.`,
+q:`<span class="qtag2">Reformulation</span> Quelle reformulation est la plus complète avant de proposer une solution ?`,
+opts:[
+{t:'"Donc vous voulez des chaussures de trail pas trop chères."',ok:false},
+{t:'"Si je résume : vous cherchez des chaussures trail pour 2h en forêt le week-end, en tant que débutante, pointure 39, dans un budget de 100 à 130€, avec une attention particulière aux chevilles. C\'est bien ça ?"',ok:true},
+{t:'"D\'accord, je vais vous conseiller nos meilleurs modèles."',ok:false},
+{t:'"Vous avez des douleurs aux chevilles, donc il vous faut forcément un stabilisateur."',ok:false}],
+cor:'B'},
+
+{id:'q31',sec:'Contact téléphonique',tag:'Types de questions au téléphone',type:'mcq',pts:2,
+ctx:`Vous souhaitez savoir si Mme Duval dépasse régulièrement 1h de sortie pour affiner votre conseil produit.`,
+q:`<span class="qtag2">Question fermée</span> Quelle formulation est une question fermée bien construite ?`,
+opts:[{t:'"Et vos sorties, ça dure combien de temps en général ?"',ok:false},{t:'"Parlez-moi de vos habitudes de randonnée."',ok:false},{t:'"Est-ce que vos sorties dépassent généralement 1h ?"',ok:true},{t:'"Qu\'est-ce que vous aimez dans la randonnée ?"',ok:false}],
+cor:'C'},
+
+{id:'q32',sec:'Contact téléphonique',tag:'Congé professionnel',type:'multi',pts:3,
+ctx:`Marc Tissier vous demande ce que doit contenir une bonne clôture d'appel professionnel.`,
+q:`<span class="qtag2">Multi-choix</span> Que doit contenir une phase Congé professionnelle ? <em>(Plusieurs réponses)</em>`,
+opts:[{t:'Reformuler ce qui a été convenu ou promis.',ok:true},{t:'Remercier le client pour son appel.',ok:true},{t:'Proposer de nouvelles offres juste avant de raccrocher.',ok:false},{t:'Prendre congé avec une formule de politesse adaptée.',ok:true},{t:'Raccrocher dès qu\'on a obtenu l\'information cherchée.',ok:false}],
+cor:'A, B, D'},
+
+{id:'q33',sec:'Contact téléphonique',tag:'Fausse urgence',type:'mcq',pts:2,
+ctx:`Au moment de conclure l'appel avec un client hésitant, un collègue vous suggère : "Dis-lui que c'est le dernier en stock !" — ce n'est pas vrai.`,
+q:`<span class="qtag2">Déontologie</span> Que faites-vous ?`,
+opts:[{t:'Vous le faites — ça aide à conclure et le client ne le saura jamais.',ok:false},{t:'Vous refusez : utiliser une fausse urgence est contraire aux principes déontologiques du référentiel.',ok:true},{t:'Vous demandez d\'abord confirmation à Marc Tissier.',ok:false},{t:'Vous proposez au client de rappeler demain.',ok:false}],
+cor:'B'},
+
+// ─── SECTION 4 : Contact digital (Q34-43) ───
+{id:'q34',sec:'Contact digital',tag:'Chat en ligne',type:'mcq',pts:2,
+ctx:`Vous gérez le chat NOVEO. Un message arrive : "Bonjour, je cherche des chaussures pour un trek de 5 jours dans les Pyrénées en juillet. Budget 180-200€, sac de 15 kg."`,
+q:`<span class="qtag2">Chat</span> Quelle réponse est la plus professionnelle ?`,
+opts:[{t:'"Bonjour ! Regardez notre rayon randonnée sur le site !"',ok:false},{t:'"Bonjour 😊 Je suis [prénom] de NOVEO. Pour 5 jours en autonomie avec 15 kg, il vous faut une tige haute avec maintien. Dans votre budget, j\'ai 2-3 modèles parfaits. Une question : vos pieds sont fins, normaux ou larges ?"',ok:true},{t:'"Bonjour. Quelle est votre pointure ?"',ok:false},{t:'"Salut ! T\'as des super options chez nous !"',ok:false}],
+cor:'B'},
+
+{id:'q35',sec:'Contact digital',tag:'Règles email professionnel',type:'multi',pts:3,
+ctx:`Marc Tissier passe en revue vos emails de la matinée.`,
+q:`<span class="qtag2">Multi-choix</span> Quelles pratiques sont correctes pour la communication professionnelle écrite ? <em>(Plusieurs réponses)</em>`,
+opts:[{t:'Soigner l\'orthographe — l\'écrit reste et représente l\'enseigne.',ok:true},{t:'Utiliser des abréviations (bcp, jsp) pour répondre plus vite.',ok:false},{t:'Vouvoyer le client par défaut.',ok:true},{t:'Signer avec son prénom et le nom de l\'enseigne.',ok:true},{t:'Répondre dans un délai raisonnable (moins de 2h en horaires ouvrés).',ok:true}],
+cor:'A, C, D, E'},
+
+{id:'q36',sec:'Contact digital',tag:'E-réputation commentaire négatif',type:'mcq',pts:2,
+ctx:`Un commentaire négatif apparaît sur Google : "Vendeurs injoignables, j'ai attendu 20 minutes sans aide. Jamais plus !"`,
+q:`<span class="qtag2">E-réputation</span> Comment gérez-vous ce commentaire public ?`,
+opts:[{t:'Vous le supprimez pour protéger l\'image de NOVEO.',ok:false},{t:'"Bonjour, nous sommes désolés de cette expérience. Pouvez-vous nous contacter en message privé ? Nous souhaitons comprendre et améliorer."',ok:true},{t:'"Notre équipe est très professionnelle — ce commentaire est exagéré."',ok:false},{t:'Ignorer et continuer à publier du contenu positif.',ok:false}],
+cor:'B'},
+
+{id:'q37',sec:'Contact digital',tag:'Registre chat vs email',type:'mcq',pts:2,
+ctx:`Marc Tissier vous demande : "Quelle est la différence de registre entre un chat en temps réel et un email ?"`,
+q:`<span class="qtag2">Registre digital</span> Quelle affirmation est correcte ?`,
+opts:[{t:'Le chat peut être légèrement plus immédiat et dynamique ; l\'email est plus formel et structuré — mais les deux restent professionnels.',ok:true},{t:'Le chat permet le tutoiement, l\'email non.',ok:false},{t:'L\'email ne nécessite pas de signature contrairement au chat.',ok:false},{t:'Les deux sont strictement identiques dans leur registre.',ok:false}],
+cor:'A'},
+
+{id:'q38',sec:'Contact digital',tag:'Délai de réponse digital',type:'mcq',pts:2,
+ctx:`Un prospect a posé une question sur le chat NOVEO. Vous êtes occupé avec un client en magasin.`,
+q:`<span class="qtag2">Réactivité</span> Pourquoi le délai de réponse est-il critique sur les canaux digitaux ?`,
+opts:[{t:'Pour respecter les algorithmes des réseaux sociaux.',ok:false},{t:'Parce que le client digital compare souvent plusieurs enseignes simultanément — un délai trop long et il passe à la concurrence.',ok:true},{t:'Parce que la loi impose un délai maximum de 30 minutes.',ok:false},{t:'Le délai n\'est pas important si la réponse est de qualité.',ok:false}],
+cor:'B'},
+
+{id:'q39',sec:'Contact digital',tag:'Réseaux sociaux — registre',type:'mcq',pts:2,
+ctx:`Un utilisateur Instagram commente la publication NOVEO : "Trop bien vos chaussures ! Vous faites des trail ?"`,
+q:`<span class="qtag2">Réseaux sociaux</span> Quelle réponse est la plus adaptée au contexte Instagram ?`,
+opts:[{t:'"Merci ! Oui, rendez-vous en boutique pour découvrir notre sélection trail 🏔️"',ok:true},{t:'"Bonjour Monsieur/Madame, nous vous invitons à consulter notre catalogue sur le site."',ok:false},{t:'"Ouais c\'est ouf ce qu\'on a !"',ok:false},{t:'Ne pas répondre — Instagram n\'est pas un canal de vente officiel.',ok:false}],
+cor:'A'},
+
+{id:'q40',sec:'Contact digital',tag:'Email entrant structure',type:'mcq',pts:2,
+ctx:`Un email arrive : "Bonjour, j'ai vu l'Osprey Atmos AG 65 sur votre site, il fait quel volume exactement ?"`,
+q:`<span class="qtag2">Réponse email</span> Quelle structure de réponse est la plus professionnelle ?`,
+opts:[{t:'"Le volume est de 65 litres."',ok:false},{t:'Salutation personnalisée + réponse directe (65L) + argument sur l\'usage + invitation à poursuivre.',ok:true},{t:'Renvoyer vers la fiche produit sur le site.',ok:false},{t:'Demander pourquoi il pose cette question avant de répondre.',ok:false}],
+cor:'B'},
+
+{id:'q41',sec:'Contact digital',tag:'Parcours client digital',type:'mcq',pts:2,
+ctx:`Thomas vous contacte via le chat. Il mentionne qu'il a visité le magasin la semaine dernière, consulté le site depuis son mobile plusieurs fois, et hésité à appeler.`,
+q:`<span class="qtag2">Parcours omnicanal</span> Ce comportement de Thomas illustre principalement :`,
+opts:[{t:'Un client difficile qui ne sait pas ce qu\'il veut.',ok:false},{t:'Un parcours client omnicanal non linéaire — il utilise plusieurs canaux complémentaires.',ok:true},{t:'Un dysfonctionnement de votre site web.',ok:false},{t:'Un comportement exceptionnel propre aux acheteurs compulsifs.',ok:false}],
+cor:'B'},
+
+{id:'q42',sec:'Contact digital',tag:'Erreurs email client',type:'multi',pts:3,
+ctx:`Marc Tissier vous soumet un email envoyé par un ancien stagiaire. Il vous demande d'identifier les erreurs.`,
+q:`<span class="qtag2">Multi-choix</span> Parmi ces éléments, lesquels sont des <strong>erreurs professionnelles</strong> dans un email client ? <em>(Plusieurs réponses)</em>`,
+opts:[{t:'Tutoiement et langage familier ("salut", "trop bien").',ok:true},{t:'Absence de formule de politesse en ouverture.',ok:true},{t:'Réponse envoyée dans les 24h.',ok:false},{t:'Aucune signature ni coordonnées en fin de message.',ok:true},{t:'Fautes d\'orthographe non corrigées.',ok:true}],
+cor:'A, B, D, E'},
+
+{id:'q43',sec:'Contact digital',tag:'Confidentialité données client',type:'mcq',pts:2,
+ctx:`Un collègue vous demande de lui partager l'adresse email personnelle d'un client pour lui proposer une offre de sa boutique personnelle, sans lien avec NOVEO.`,
+q:`<span class="qtag2">RGPD / Déontologie</span> Que faites-vous ?`,
+opts:[{t:'Vous partagez l\'adresse — c\'est pour rendre service.',ok:false},{t:'Vous refusez : partager des données clients en dehors de la finalité NOVEO viole le RGPD et les règles déontologiques.',ok:true},{t:'Vous demandez d\'abord l\'accord du client par SMS.',ok:false},{t:'Vous transmettez mais demandez au collègue de ne rien dire.',ok:false}],
+cor:'B'},
+
+// ─── SECTION 5 : Découverte des besoins (Q44-55) ───
+{id:'q44',sec:'Découverte des besoins',tag:'Première question de découverte',type:'mcq',pts:2,
+ctx:`M. Varnier entre chez NOVEO. Il dit : "Je cherche des chaussures pour randonner cet été, mais je ne sais pas trop ce qu'il me faut."`,
+q:`<span class="qtag2">Question ouverte</span> Quelle première question est la plus efficace pour lancer la découverte ?`,
+opts:[{t:'"Vous avez un budget ?"',ok:false},{t:'"Vous préférez tige haute ou basse ?"',ok:false},{t:'"Qu\'est-ce que vous avez prévu comme randonnées cet été — durée, terrain, niveau ?"',ok:true},{t:'"Vous avez déjà des chaussures de marche ?"',ok:false}],
+cor:'C'},
+
+{id:'q45',sec:'Découverte des besoins',tag:'Question fermée',type:'mcq',pts:2,
+ctx:`M. Varnier a décrit ses randonnées : 3-4 jours dans les Alpes, terrain rocheux. Vous voulez confirmer le poids de son sac.`,
+q:`<span class="qtag2">Question fermée</span> Quelle formulation est une question fermée correcte ?`,
+opts:[{t:'"Et votre sac, c\'est quoi comme poids ?"',ok:false},{t:'"Parlez-moi de votre équipement habituel."',ok:false},{t:'"Est-ce que votre sac dépasse généralement les 12 kg ?"',ok:true},{t:'"Vous pensez à quoi comme charge ?"',ok:false}],
+cor:'C'},
+
+{id:'q46',sec:'Découverte des besoins',tag:'Question alternative',type:'mcq',pts:2,
+ctx:`Vous souhaitez cerner l'objectif principal de M. Varnier pour orienter votre conseil.`,
+q:`<span class="qtag2">Question alternative</span> Quelle question aide à cerner son objectif ?`,
+opts:[{t:'"C\'est plutôt pour vous dépenser physiquement ou vous ressourcer en montagne ?"',ok:true},{t:'"Vous aimez vraiment la montagne ?"',ok:false},{t:'"Pourquoi vous faites de la randonnée ?"',ok:false},{t:'"Quel type de terrain vous préférez ?"',ok:false}],
+cor:'A'},
+
+{id:'q47',sec:'Découverte des besoins',tag:'Écoute active — détail',type:'mcq',pts:2,
+ctx:`M. Varnier mentionne en passant : "J'ai eu une légère entorse l'année dernière, ça va mieux maintenant."`,
+q:`<span class="qtag2">Écoute active</span> Comment traitez-vous cette information ?`,
+opts:[{t:'Vous ne la retenez pas — "ça va mieux" signifie que c\'est résolu.',ok:false},{t:'Vous la mémorisez et l\'intégrez dans vos critères de sélection produit.',ok:true},{t:'Vous demandez des détails médicaux précis sur l\'entorse.',ok:false},{t:'Vous n\'en tenez compte que si M. Varnier le mentionne à nouveau.',ok:false}],
+cor:'B'},
+
+{id:'q48',sec:'Découverte des besoins',tag:'Plan de découverte',type:'order',pts:3,
+ctx:`Marc Tissier vous demande de reconstruire l'ordre d'un plan de découverte des besoins.`,
+q:`<span class="qtag2">Remise en ordre</span> Remettez dans l'ordre les étapes d'une découverte des besoins.`,
+items:[{id:1,who:'vnd',txt:'Question ouverte large : "Qu\'est-ce que vous avez prévu comme randonnées ?"',cp:0},{id:2,who:'cli',txt:'Le client décrit librement son projet',cp:1},{id:3,who:'vnd',txt:'Questions fermées de précision : poids du sac, niveau...',cp:2},{id:4,who:'vnd',txt:'Question alternative pour cerner l\'objectif',cp:3},{id:5,who:'vnd',txt:'Écoute de tous les détails mentionnés (y compris en passant)',cp:4},{id:6,who:'vnd',txt:'Reformulation complète + question de validation',cp:5}],
+cor:'Q ouverte → Client s\'exprime → Q fermées précision → Q alternative → Écoute détails → Reformulation'},
+
+{id:'q49',sec:'Découverte des besoins',tag:'Reformulation complète',type:'mcq',pts:3,
+ctx:`M. Varnier a tout dit : 3-4 jours autonomie dans les Alpes, terrain rocheux, sac 14-15 kg, randonnée expérimenté mais jamais haute montagne, budget ~200€, pieds larges, entorse passée.`,
+q:`<span class="qtag2">Reformulation</span> Quelle reformulation est la plus complète et professionnelle ?`,
+opts:[
+{t:'"Donc vous cherchez des chaussures solides pour la montagne."',ok:false},
+{t:'"Si je résume : 3-4 jours en autonomie dans les Alpes, terrain rocheux, sac de 14-15 kg, expérience randonnée mais pas haute montagne, pieds larges, entorse passée à ménager, budget ~200€. C\'est bien ça ?"',ok:true},
+{t:'"D\'accord, je vais vous montrer nos meilleures chaussures de montagne."',ok:false},
+{t:'"Vous voulez du solide et confortable pour les Alpes dans votre budget."',ok:false}],
+cor:'B'},
+
+{id:'q50',sec:'Découverte des besoins',tag:'SONCASE motivation',type:'mcq',pts:3,
+ctx:`M. Varnier dit : "Ce qui compte pour moi, c'est que le matériel tienne dans le temps. J'ai eu trop de mauvaises expériences avec des équipements bon marché qui ont lâché en pleine randonnée."`,
+q:`<span class="qtag2">SONCASE</span> Quelle est la motivation dominante de M. Varnier selon la méthode SONCASE ?`,
+opts:[{t:'O — Orgueil : vouloir un matériel de prestige.',ok:false},{t:'S — Sécurité : besoin de fiabilité, durabilité, absence de risque.',ok:true},{t:'A — Argent : vouloir faire une bonne affaire.',ok:false},{t:'N — Nouveauté : attrait pour les dernières technologies.',ok:false}],
+cor:'B'},
+
+{id:'q51',sec:'Découverte des besoins',tag:'Frein d\'achat',type:'mcq',pts:2,
+ctx:`M. Varnier ajoute : "Je veux bien mettre le prix, mais j'ai peur d'acheter quelque chose de trop technique pour mon niveau."`,
+q:`<span class="qtag2">Frein</span> Quel type de frein exprime-t-il ?`,
+opts:[{t:'Un frein prix.',ok:false},{t:'Un frein d\'inadéquation — il craint que le produit dépasse son niveau.',ok:true},{t:'Un frein de disponibilité.',ok:false},{t:'Un frein de notoriété de marque.',ok:false}],
+cor:'B'},
+
+{id:'q52',sec:'Découverte des besoins',tag:'Processus d\'achat',type:'mcq',pts:2,
+ctx:`M. Varnier dit : "Je me renseigne depuis 2 semaines, j'ai lu des comparatifs, je commence à avoir une idée mais ne suis pas encore décidé."`,
+q:`<span class="qtag2">Processus d'achat</span> À quelle étape du processus d'achat se situe M. Varnier ?`,
+opts:[{t:'Reconnaissance du besoin.',ok:false},{t:'Recherche d\'information — il compare les options avant de décider.',ok:true},{t:'Décision d\'achat — il est prêt à acheter immédiatement.',ok:false},{t:'Évaluation post-achat.',ok:false}],
+cor:'B'},
+
+{id:'q53',sec:'Découverte des besoins',tag:'Multi types de questions',type:'multi',pts:3,
+ctx:`Marc Tissier évalue votre maîtrise des types de questions.`,
+q:`<span class="qtag2">Multi-choix</span> Parmi ces affirmations, lesquelles sont <strong>vraies</strong> sur les types de questions ? <em>(Plusieurs réponses)</em>`,
+opts:[{t:'Une question ouverte invite le client à s\'exprimer librement.',ok:true},{t:'Une question fermée n\'attend qu\'une réponse oui/non ou précise.',ok:true},{t:'Une question alternative force le client à choisir entre deux options.',ok:true},{t:'Il faut commencer la découverte par une question sur le budget.',ok:false},{t:'La reformulation intervient après avoir posé toutes les questions.',ok:true}],
+cor:'A, B, C, E'},
+
+{id:'q54',sec:'Découverte des besoins',tag:'SONCASE complet',type:'mcq',pts:2,
+ctx:`Mme Laurent vous dit : "Je veux quelque chose que personne n'a encore, les toutes dernières sorties."`,
+q:`<span class="qtag2">SONCASE</span> Quelle lettre du SONCASE correspond à cette motivation ?`,
+opts:[{t:'S — Sécurité.',ok:false},{t:'O — Orgueil.',ok:false},{t:'N — Nouveauté.',ok:true},{t:'C — Confort.',ok:false}],
+cor:'C'},
+
+{id:'q55',sec:'Découverte des besoins',tag:'Découverte incomplète',type:'mcq',pts:3,
+ctx:`Vous avez demandé à Mme Dupré : "Quel budget ?" puis "Quelle pointure ?" et vous lui proposez directement trois modèles. Elle repart sans acheter, hésitante.`,
+q:`<span class="qtag2">Analyse</span> Pourquoi cette découverte a probablement échoué ?`,
+opts:[{t:'Les modèles proposés étaient hors budget.',ok:false},{t:'Vous n\'avez pas exploré l\'usage réel, les motivations, les freins ni reformulé — votre proposition n\'était pas personnalisée.',ok:true},{t:'Mme Dupré n\'avait pas l\'intention d\'acheter.',ok:false},{t:'Vous avez posé trop de questions.',ok:false}],
+cor:'B'},
+
+// ─── SECTION 6 : Argumentation, objections, conclusion (Q56-70) ───
+{id:'q56',sec:'Argumentation',tag:'Méthode CAP',type:'mcq',pts:2,
+ctx:`Vous présentez les Salomon Quest 4 GTX à M. Varnier.`,
+q:`<span class="qtag2">CAP</span> Quel est l'élément le plus important de la méthode CAP pour convaincre ?`,
+opts:[{t:'La Caractéristique technique.',ok:false},{t:'L\'Avantage personnalisé au besoin de CE client.',ok:true},{t:'La Preuve seule suffit.',ok:false},{t:'Annoncer le prix en premier.',ok:false}],
+cor:'B'},
+
+{id:'q57',sec:'Argumentation',tag:'CAP appliqué',type:'mcq',pts:3,
+ctx:`Vous construisez un argument CAP sur les Quest 4 GTX pour M. Varnier (terrain rocheux, sac 15 kg, entorse passée).`,
+q:`<span class="qtag2">CAP complet</span> Quel argument est le mieux construit ?`,
+opts:[
+{t:'"Ce modèle est imperméable et très populaire."',ok:false},
+{t:'"La tige haute Gore-Tex [C] maintient et imperméabilise votre cheville sur terrain rocheux avec 15 kg [A] — c\'est le n°1 plébiscité par les guides de haute montagne pour les treks multi-jours en autonomie [P]."',ok:true},
+{t:'"C\'est notre meilleur modèle, vous pouvez me faire confiance."',ok:false},
+{t:'"Il a une semelle Contagrip et une membrane Gore-Tex XCR."',ok:false}],
+cor:'B'},
+
+{id:'q58',sec:'Argumentation',tag:'Objection prix',type:'mcq',pts:3,
+ctx:`M. Varnier : "209€, c'est un peu au-dessus de mes 200€."`,
+q:`<span class="qtag2">Objection prix</span> Comment traitez-vous cet écart de 9€ ?`,
+opts:[
+{t:'"Je comprends, on a des modèles moins chers."',ok:false},
+{t:'"Je comprends. Ces 9€ supplémentaires, c\'est le contrefort qui protège votre cheville fragilisée avec 15 kg — un 189€ ne l\'a pas. Sur 3 saisons, c\'est moins de 5€ de plus par an."',ok:true},
+{t:'"209€ c\'est le juste prix pour cette qualité."',ok:false},
+{t:'"Je vous fais 10€ de remise puisque vous hésitez."',ok:false}],
+cor:'B'},
+
+{id:'q59',sec:'Argumentation',tag:'Objection produit',type:'mcq',pts:3,
+ctx:`M. Varnier : "La semelle a l'air rigide... J'ai peur que ce soit inconfortable."`,
+q:`<span class="qtag2">Retournement</span> Comment retournez-vous cette objection en avantage ?`,
+opts:[
+{t:'"Non non, elles sont très confortables, tout le monde les adore."',ok:false},
+{t:'"Je comprends cette impression. Avec 15 kg sur terrain rocheux, la rigidité protège justement vos articulations — une semelle souple se déformerait. Les 2-3 premières sorties, le pied s\'adapte."',ok:true},
+{t:'"Si vous préférez du souple, j\'ai d\'autres modèles moins adaptés."',ok:false},
+{t:'"La rigidité c\'est normal pour une chaussure de montagne."',ok:false}],
+cor:'B'},
+
+{id:'q60',sec:'Argumentation',tag:'Objection concurrence',type:'mcq',pts:3,
+ctx:`M. Varnier : "Decathlon m'a conseillé leur Forclaz 900 à 149€. C'est à peu près la même chose ?"`,
+q:`<span class="qtag2">Concurrence</span> Comment gérez-vous cette objection concurrence de façon déontologique ?`,
+opts:[
+{t:'"Decathlon c\'est pas mal mais pas le même niveau."',ok:false},
+{t:'"La Forclaz 900 est très bien pour la randonnée classique. Pour vos 3-4 jours en autonomie avec 15 kg en terrain rocheux dans les Alpes, la différence est dans le maintien de cheville et la durabilité multi-saison — des critères critiques pour votre usage."',ok:true},
+{t:'"Je vous déconseille vraiment Decathlon pour de la vraie montagne."',ok:false},
+{t:'"Prenez celle qui vous convient, c\'est votre choix."',ok:false}],
+cor:'B'},
+
+{id:'q61',sec:'Argumentation',tag:'Structure traitement objection',type:'order',pts:3,
+ctx:`Marc Tissier vous demande de reconstruire la structure professionnelle du traitement d'une objection.`,
+q:`<span class="qtag2">Remise en ordre</span> Remettez dans l'ordre les étapes du traitement d'une objection.`,
+items:[{id:1,who:'vnd',txt:'Valider l\'objection sans la rejeter : "Je comprends..."',cp:0},{id:2,who:'vnd',txt:'Reformuler le besoin initial : "Vous m\'avez dit vouloir..."',cp:1},{id:3,who:'vnd',txt:'Argumenter la valeur en lien avec son besoin spécifique',cp:2},{id:4,who:'vnd',txt:'Apporter une preuve concrète',cp:3},{id:5,who:'vnd',txt:'Question de rebond : "Est-ce que ça répond à votre inquiétude ?"',cp:4}],
+cor:'Valider → Reformuler besoin → Argumenter → Preuve → Question de rebond'},
+
+{id:'q62',sec:'Argumentation',tag:'Signaux d\'achat',type:'multi',pts:3,
+ctx:`M. Varnier a essayé les Quest 4 GTX. Il marche dans l'allée, regarde la semelle, demande les délais de livraison et sa femme dit : "Elles te vont vraiment bien."`,
+q:`<span class="qtag2">Multi-choix</span> Lesquels sont des <strong>signaux d'achat</strong> ? <em>(Plusieurs réponses)</em>`,
+opts:[{t:'Il marche dans l\'allée pour tester la sensation.',ok:true},{t:'Il regarde attentivement la semelle.',ok:true},{t:'Il dit "c\'est cher quand même".',ok:false},{t:'Il demande les délais de livraison.',ok:true},{t:'Sa femme valide le choix.',ok:true}],
+cor:'A, B, D, E'},
+
+{id:'q63',sec:'Conclusion',tag:'Technique de closing',type:'mcq',pts:3,
+ctx:`M. Varnier : "Elles sont vraiment confortables... je les sens bien." Il tient la boîte.`,
+q:`<span class="qtag2">Closing</span> Quelle technique de conclusion est la plus adaptée ?`,
+opts:[
+{t:'"Alors, vous les prenez ?" (direct, pression)',ok:false},
+{t:'"Je vous les emballe ? Et pour les délais — je vérifie en direct pendant que vous choisissez votre moyen de paiement."',ok:true},
+{t:'"Prenez le temps de réfléchir, il n\'y a pas d\'urgence."',ok:false},
+{t:'"C\'est notre dernière paire !" (fausse urgence)',ok:false}],
+cor:'B'},
+
+{id:'q64',sec:'Conclusion',tag:'Réassurance post-achat',type:'mcq',pts:2,
+ctx:`M. Varnier vient de valider l'achat mais paraît légèrement hésitant : "J'espère ne pas regretter..."`,
+q:`<span class="qtag2">Réassurance</span> Comment le rassurez-vous ?`,
+opts:[{t:'"Ne vous inquiétez pas, c\'est un bon produit."',ok:false},{t:'"Vous avez fait le bon choix M. Varnier : ce modèle correspond exactement à votre usage — les Alpes, votre sac lourd, votre cheville. Vous allez vraiment les apprécier sur le terrain."',ok:true},{t:'"De toute façon vous pouvez les retourner si ça ne convient pas."',ok:false},{t:'"Tout le monde hésite, c\'est normal."',ok:false}],
+cor:'B'},
+
+{id:'q65',sec:'Conclusion',tag:'Vente complémentaire',type:'mcq',pts:3,
+ctx:`M. Varnier vient de valider l'achat des Quest 4 GTX. Il s'apprête à payer.`,
+q:`<span class="qtag2">Vente additionnelle</span> Quelle proposition de vente complémentaire est la mieux argumentée ?`,
+opts:[
+{t:'"On a aussi des vestes de ski en promo !"',ok:false},
+{t:'"Pour vos 3-4 jours en autonomie, avez-vous pensé aux chaussettes mérinos techniques ? Elles régulent la chaleur et réduisent les ampoules sur de longues journées — c\'est souvent ce qui fait la différence en fin de trek."',ok:true},
+{t:'"Vous prendrez une deuxième paire à tarif préférentiel ?"',ok:false},
+{t:'"On a des bâtons de randonnée aussi."',ok:false}],
+cor:'B'},
+
+{id:'q66',sec:'Conclusion',tag:'Complémentaire vs supplémentaire',type:'mcq',pts:2,
+ctx:`Marc Tissier vous demande de distinguer les deux types de vente additionnelle.`,
+q:`<span class="qtag2">Vente additionnelle</span> Quelle est la différence entre vente complémentaire et supplémentaire ?`,
+opts:[{t:'La complémentaire est liée directement à l\'usage du produit acheté ; la supplémentaire est une autre catégorie cohérente avec le profil.',ok:true},{t:'La complémentaire concerne les accessoires, la supplémentaire les vêtements.',ok:false},{t:'Il n\'y a aucune différence dans le référentiel.',ok:false},{t:'La supplémentaire est toujours plus chère que la complémentaire.',ok:false}],
+cor:'A'},
+
+{id:'q67',sec:'Conclusion',tag:'Fin de transaction ordre',type:'order',pts:3,
+ctx:`Marc Tissier vous demande de reconstruire l'ordre professionnel d'une fin de transaction.`,
+q:`<span class="qtag2">Remise en ordre</span> Remettez dans l'ordre les étapes de fin de transaction.`,
+items:[{id:1,who:'vnd',txt:'Rassurer le client sur son choix',cp:0},{id:2,who:'vnd',txt:'Formaliser la vente (bon de commande, vérification)',cp:1},{id:3,who:'vnd',txt:'Mettre en place les modalités de règlement et de livraison',cp:2},{id:4,who:'vnd',txt:'Proposer les produits additionnels pertinents',cp:3},{id:5,who:'vnd',txt:'Informer sur la garantie et le SAV',cp:4},{id:6,who:'vnd',txt:'Prendre congé de façon professionnelle et chaleureuse',cp:5}],
+cor:'Réassurance → Formalisation → Modalités → Additionnelle → Garantie → Congé'},
+
+{id:'q68',sec:'Conclusion',tag:'Prise de congé',type:'mcq',pts:2,
+ctx:`M. Varnier range son reçu et s'apprête à partir.`,
+q:`<span class="qtag2">Congé</span> Quelle prise de congé est professionnelle et fidélisante ?`,
+opts:[
+{t:'"Merci, bonne journée !"',ok:false},
+{t:'"Bonne randonnée en août M. Varnier ! Si vous avez la moindre question avant le départ, n\'hésitez pas à repasser ou à nous appeler."',ok:true},
+{t:'"N\'oubliez pas de nous laisser un avis Google !"',ok:false},
+{t:'"Revenez nous voir pour vos prochains achats !"',ok:false}],
+cor:'B'},
+
+{id:'q69',sec:'Conclusion',tag:'Multi résultats attendus',type:'multi',pts:3,
+ctx:`Marc Tissier vous interroge sur les résultats attendus du référentiel GC1.`,
+q:`<span class="qtag2">Multi-choix</span> Lesquels correspondent aux <strong>résultats attendus officiels</strong> du référentiel GC1 ? <em>(Plusieurs réponses)</em>`,
+opts:[{t:'Un contact positif est établi et un climat de confiance est instauré.',ok:true},{t:'Le vendeur vend un produit à chaque client qui entre.',ok:false},{t:'Le besoin du client, ses motivations et freins sont clairement identifiés.',ok:true},{t:'Les objections sont traitées de façon efficace.',ok:true},{t:'Les produits et services associés sont proposés de façon pertinente.',ok:true}],
+cor:'A, C, D, E'},
+
+{id:'q70',sec:'Conclusion',tag:'Synthèse GC1 globale',type:'mcq',pts:3,
+ctx:`Fin de journée. Marc Tissier vous pose une dernière question de synthèse.`,
+q:`<span class="qtag2">Synthèse</span> Quelle affirmation décrit le mieux l'objectif global du GC1 — Conseiller et vendre ?`,
+opts:[
+{t:'Vendre le maximum de produits par jour pour atteindre les objectifs de l\'enseigne.',ok:false},
+{t:'Identifier avec précision les besoins du client et proposer la solution la plus adaptée, dans le respect des principes déontologiques, pour construire une relation client durable.',ok:true},
+{t:'Informer le client sur l\'ensemble des produits disponibles en rayon.',ok:false},
+{t:'Conclure chaque entretien par une vente additionnelle.',ok:false}],
+cor:'B'},
+
+]; // FIN BANQUE
+
+// ═══════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════
+let STU={nom:'',prenom:'',classe:''};
+let SHQ=[];
+let ANS=[];
+let CUR=0;
+let CHEAT_CNT=0;
+let CHEAT_ON=false;
+let ZEROED=new Set();
+let STARTED=false;
+let TOTAL=0;
+
+// ═══════════════════════════════════════
+// SEEDED SHUFFLE (ordre basé sur nom+prenom)
+// ═══════════════════════════════════════
+function hashStr(s){let h=5381;for(let i=0;i<s.length;i++){h=((h<<5)+h)+s.charCodeAt(i);h=h&h;}return Math.abs(h);}
+function mkRng(seed){let s=seed;return()=>{s=(s*1664525+1013904223)&0xffffffff;return(s>>>0)/0xffffffff;};}
+function shuffle(arr,seed){const rng=mkRng(seed),a=[...arr];for(let i=a.length-1;i>0;i--){const j=Math.floor(rng()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+
+// ═══════════════════════════════════════
+// DÉMARRER
+// ═══════════════════════════════════════
+function start(){
+  const nom=document.getElementById('i-nom').value.trim();
+  const prenom=document.getElementById('i-prenom').value.trim();
+  let ok=true;
+  if(!nom){document.getElementById('i-nom').classList.add('err');document.getElementById('e-nom').classList.add('show');ok=false;}
+  else{document.getElementById('i-nom').classList.remove('err');document.getElementById('e-nom').classList.remove('show');}
+  if(!prenom){document.getElementById('i-prenom').classList.add('err');document.getElementById('e-prenom').classList.add('show');ok=false;}
+  else{document.getElementById('i-prenom').classList.remove('err');document.getElementById('e-prenom').classList.remove('show');}
+  if(!ok)return;
+
+  STU={nom:nom.toUpperCase(),prenom,classe:document.getElementById('i-classe').value.trim()};
+  const seed=hashStr(nom.toLowerCase()+prenom.toLowerCase());
+  // Mélange des questions ET des options pour chaque QCM
+  SHQ=shuffle(QS,seed);
+  ANS=SHQ.map(q=>({qid:q.id,type:q.type,tag:q.tag,sec:q.sec,pts_max:q.pts,pts_got:0,correct:false,zeroed:false}));
+
+  document.getElementById('s-id').classList.add('hidden');
+  document.getElementById('hdr').classList.remove('hidden');
+  document.getElementById('body').classList.remove('hidden');
+  document.getElementById('hdr-s').textContent=STU.prenom+' '+STU.nom+(STU.classe?' — '+STU.classe:'');
+
+  STARTED=true;
+  initCheat();
+  renderQ(0);
+}
+
+// ═══════════════════════════════════════
+// ANTI-TRICHE
+// ═══════════════════════════════════════
+function initCheat(){
+  document.addEventListener('visibilitychange',()=>{if(document.hidden&&STARTED)triggerCheat('Changement d\'onglet ou minimisation détecté.');});
+  window.addEventListener('blur',()=>{if(STARTED)triggerCheat('Fenêtre réduite ou autre application activée.');});
+}
+function triggerCheat(reason){
+  if(CHEAT_ON)return;
+  CHEAT_CNT++;CHEAT_ON=true;
+  if(CUR<ANS.length&&!ANS[CUR].zeroed){ANS[CUR].zeroed=true;ANS[CUR].pts_got=0;ZEROED.add(SHQ[CUR].id);}
+  document.getElementById('ch-msg').innerHTML='<strong>'+reason+'</strong><br>La question n°'+(CUR+1)+' est annulée et mise à zéro.<br>Ce comportement est enregistré dans votre résultat.';
+  document.getElementById('ch-cnt').textContent='Avertissement '+CHEAT_CNT+' — Question '+(CUR+1)+' annulée';
+  document.getElementById('cheat-ov').classList.remove('hidden');
+  // Auto-dismiss après 3s et passe à la suivante
+  setTimeout(()=>{
+    CHEAT_ON=false;
+    document.getElementById('cheat-ov').classList.add('hidden');
+    goNext();
+  },3000);
+}
+
+// ═══════════════════════════════════════
+// PROGRESSION
+// ═══════════════════════════════════════
+function updateProg(){
+  const d=Math.min(CUR+1,SHQ.length);
+  document.getElementById('prog').style.width=(d/SHQ.length*100)+'%';
+  document.getElementById('hqn').textContent=d+'/'+SHQ.length;
+}
+
+// ═══════════════════════════════════════
+// RENDU QUESTION
+// ═══════════════════════════════════════
+function renderQ(idx){
+  CUR=idx;updateProg();
+  const q=SHQ[idx];
+  const qz=document.getElementById('qzone');
+  const letters=['A','B','C','D','E'];
+  const typeLbl={mcq:'QCM',multi:'Multi-choix',order:'Remise en ordre'};
+  const typeClass={mcq:'mcq',multi:'multi',order:'order'};
+  const ctxHtml=q.ctx?`<div class="qctx"><strong>📍 Situation :</strong> ${q.ctx.replace(/\n/g,'<br>')}</div>`:'';
+  const isZeroed=ZEROED.has(q.id);
+  let inner='';
+
+  if(q.type==='mcq'){
+    const s=hashStr(STU.nom+q.id);
+    const sOpts=shuffle(q.opts,s);
+    inner=`<div class="opts">${sOpts.map((o,i)=>`<button class="opt" data-ok="${o.ok}" onclick="selOpt(this)"><span class="ol">${letters[i]}</span>${o.t}</button>`).join('')}</div>
+    <div class="crow"><span class="chint">Sélectionnez une réponse puis validez.</span><button class="btn-val" id="bval" onclick="confMcq()" disabled>Valider →</button></div>`;
+  } else if(q.type==='multi'){
+    inner=`<div class="multi-hint">⬜ Plusieurs réponses correctes possibles.</div>
+    <div class="opts">${q.opts.map((o,i)=>`<button class="opt" data-ok="${o.ok}" onclick="togMulti(this)"><span class="ol">${letters[i]}</span>${o.t}</button>`).join('')}</div>
+    <div class="crow"><span class="chint">Cochez toutes les réponses correctes.</span><button class="btn-val" id="bval" onclick="confMulti()">Valider →</button></div>`;
+  } else if(q.type==='order'){
+    const sItems=shuffle(q.items,hashStr(STU.nom+q.id));
+    const rows=sItems.map((it,i)=>{
+      const wc=it.who==='cli'?'cli':'vnd';const wl=it.who==='cli'?'Client':'Vous';
+      return`<li class="ord-item" draggable="true" data-id="${it.id}" ondragstart="oDS(event)" ondragover="oDOV(event)" ondrop="oDrop(event)" ondragend="oDE(event)"><span class="ord-n">${i+1}</span><span class="ord-who ${wc}">${wl}</span><span class="ord-txt">${it.txt}</span></li>`;
+    }).join('');
+    inner=`<ul class="ord-list" id="ord-list">${rows}</ul>
+    <div class="crow"><span class="chint">Glissez-déposez pour remettre dans l'ordre.</span><button class="btn-val" id="bval" onclick="confOrder()">Valider →</button></div>`;
+  }
+
+  const lockBan=isZeroed?`<div class="lock-ban">⚠️ Question annulée (changement de fenêtre). 0 point.</div>`:'';
+  qz.innerHTML=`<div class="qc">
+    <div class="qmeta">
+      <span class="qnum">Question ${idx+1} / ${SHQ.length}</span>
+      <span class="qtag">${q.sec}</span>
+      <span class="qtype-badge ${typeClass[q.type]||'mcq'}">${typeLbl[q.type]||'QCM'}</span>
+    </div>
+    ${ctxHtml}
+    <div class="qtxt">${q.q}</div>
+    ${inner}
+    ${lockBan}
+  </div>`;
+
+  if(isZeroed){
+    document.querySelectorAll('.opt').forEach(o=>{o.disabled=true;o.classList.add('locked-q');});
+    document.querySelectorAll('.ord-item').forEach(o=>o.setAttribute('draggable','false'));
+    const bv=document.getElementById('bval');if(bv)bv.disabled=true;
+  }
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// MCQ
+function selOpt(el){
+  if(el.disabled)return;
+  document.querySelectorAll('.opt').forEach(o=>o.classList.remove('sel'));
+  el.classList.add('sel');
+  document.getElementById('bval').disabled=false;
+}
+function confMcq(){
+  const sel=document.querySelector('.opt.sel');if(!sel)return;
+  const q=SHQ[CUR];const ok=sel.dataset.ok==='true';
+  const pts=ok?q.pts:Math.floor(q.pts*0.3);
+  if(!ANS[CUR].zeroed){ANS[CUR].pts_got=pts;ANS[CUR].correct=ok;TOTAL+=pts;}
+  goNext();
+}
+
+// MULTI
+function togMulti(el){el.classList.toggle('multi-sel');}
+function confMulti(){
+  const q=SHQ[CUR];const btns=document.querySelectorAll('.opt');
+  let ok=true;
+  btns.forEach(b=>{
+    const isOk=b.dataset.ok==='true';const isSel=b.classList.contains('multi-sel');
+    if((!isOk&&isSel)||(isOk&&!isSel))ok=false;
+  });
+  const pts=ok?q.pts:Math.floor(q.pts*0.4);
+  if(!ANS[CUR].zeroed){ANS[CUR].pts_got=pts;ANS[CUR].correct=ok;TOTAL+=pts;}
+  goNext();
+}
+
+// ORDER
+let _oSrc=null;
+function oDS(e){_oSrc=e.currentTarget;e.currentTarget.classList.add('dragging');}
+function oDE(e){e.currentTarget.classList.remove('dragging');}
+function oDOV(e){e.preventDefault();}
+function oDrop(e){
+  e.preventDefault();if(_oSrc===e.currentTarget)return;
+  const l=document.getElementById('ord-list');
+  const items=[...l.querySelectorAll('.ord-item')];
+  const si=items.indexOf(_oSrc),ti=items.indexOf(e.currentTarget);
+  if(si<ti)e.currentTarget.after(_oSrc);else e.currentTarget.before(_oSrc);
+  [...l.querySelectorAll('.ord-item')].forEach((el,i)=>el.querySelector('.ord-n').textContent=i+1);
+}
+function confOrder(){
+  const q=SHQ[CUR];
+  const list=document.getElementById('ord-list');
+  const cur=[...list.querySelectorAll('.ord-item')].map(el=>parseInt(el.dataset.id));
+  const correct=[...q.items].sort((a,b)=>a.cp-b.cp).map(i=>i.id);
+  const ok=JSON.stringify(cur)===JSON.stringify(correct);
+  const pts=ok?q.pts:Math.floor(q.pts*0.4);
+  if(!ANS[CUR].zeroed){ANS[CUR].pts_got=pts;ANS[CUR].correct=ok;TOTAL+=pts;}
+  goNext();
+}
+
+// NAVIGATION
+function goNext(){
+  if(CUR>=SHQ.length-1)finishExam();
+  else renderQ(CUR+1);
+}
+
+// TOAST
+function toast(msg){const z=document.getElementById('toasts');const t=document.createElement('div');t.className='tst';t.textContent=msg;z.appendChild(t);setTimeout(()=>{t.style.animation='tout .22s ease both';setTimeout(()=>t.remove(),220);},2500);}
+
+// ═══════════════════════════════════════
+// FIN & ENVOI FORMSUBMIT
+// ═══════════════════════════════════════
+function finishExam(){
+  STARTED=false;
+  document.removeEventListener('visibilitychange',()=>{});
+  window.removeEventListener('blur',()=>{});
+
+  document.getElementById('hdr').classList.add('hidden');
+  document.getElementById('body').classList.add('hidden');
+  document.getElementById('s-fin').classList.remove('hidden');
+
+  const MAX=ANS.reduce((a,x)=>a+x.pts_max,0);
+  const note20=Math.round((TOTAL/MAX)*20*10)/10;
+  const pct=TOTAL/MAX;
+  const mention=pct>=.9?'Très bien':pct>=.75?'Bien':pct>=.6?'Assez bien':pct>=.5?'Passable':'Insuffisant';
+  const date=new Date().toLocaleString('fr-FR');
+
+  document.getElementById('f-ico').textContent=pct>=.85?'🏅':pct>=.6?'📋':'📝';
+  document.getElementById('f-stu').textContent=STU.prenom+' '+STU.nom+(STU.classe?' — '+STU.classe:'');
+  document.getElementById('f-mention').textContent=mention;
+
+  // Construire le résumé pour l'email
+  let detail='';
+  if(CHEAT_CNT>0)detail+=`⚠️ FRAUDES : ${CHEAT_CNT} avertissement(s) — Q annulées : ${[...ZEROED].join(', ')}\n\n`;
+  ANS.forEach((a,i)=>{
+    detail+=`Q${i+1} [${a.sec}] — ${a.correct?'✅':'❌'} — ${a.pts_got}/${a.pts_max} pts\n`;
+  });
+
+  // Envoi via FormSubmit (caché, sans rechargement)
+  const fd=new FormData();
+  fd.append('nom',STU.nom);
+  fd.append('prenom',STU.prenom);
+  fd.append('classe',STU.classe||'NC');
+  fd.append('note_20',note20+'/20');
+  fd.append('mention',mention);
+  fd.append('score_brut',TOTAL+'/'+MAX);
+  fd.append('fraudes',CHEAT_CNT>0?CHEAT_CNT+' avertissement(s)':'aucune');
+  fd.append('date',date);
+  fd.append('detail',detail);
+  fd.append('_subject','[MCV GC1] '+STU.prenom+' '+STU.nom+' — '+note20+'/20 ('+mention+')');
+  fd.append('_captcha','false');
+  fd.append('_template','table');
+
+  fetch('https://formsubmit.co/marien.bournicon@gmail.com',{method:'POST',body:fd})
+    .then(()=>{
+      document.getElementById('fin-sending').innerHTML='✅ Résultats transmis.';
+    })
+    .catch(()=>{
+      document.getElementById('fin-sending').innerHTML='⚠️ Erreur de transmission — prévenez votre enseignant.';
+    });
+}
+</script>
+</body>
+</html>
